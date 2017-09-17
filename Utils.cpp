@@ -59,6 +59,29 @@ QString Utils::readableBits(quint64 ll, bool isSpeed)
 	return rtn;
 }
 
+
+QString Utils::readableBytes(quint64 ll, bool isSpeed)
+{
+	QString rtn;
+	int tmp;
+
+	if( (tmp = (ll >> 40)) )
+		rtn = QString(isSpeed ? "%1.%2 TB/s" : "%1.%2 TBytes").arg(tmp).arg(QString("%1").arg(ll & 0xFFC0000000LL, 2).left(2));
+	else
+	if( (tmp = (ll >> 30)) )
+		rtn = QString(isSpeed ? "%1.%2 GB/s" : "%1.%2 GBytes").arg(tmp).arg(QString("%1").arg(ll & 0x3FF00000, 2).left(2));
+	else
+	if( (tmp = (ll >> 20)) )
+		rtn = QString(isSpeed ? "%1.%2 MB/s" : "%1.%2 MBytes").arg(tmp).arg(QString("%1").arg(ll & 0xFFC00, 2).left(2));
+	else
+	if( (tmp = (ll >> 10)) )
+		rtn = QString(isSpeed ? "%1.%2 KB/s" : "%1.%2 KBytes").arg(tmp).arg(QString("%1").arg(ll & 0x3FF, 2).left(2));
+	else
+		rtn = QString(isSpeed ? "%1 bytes/s" : "%1 bytes").arg(ll);
+
+	return rtn;
+}
+
 QString Utils::readableTime(quint64 ll)
 {
 	return QString("%1").arg(ll);

@@ -46,8 +46,8 @@ void QHSAD_WidgetItem::setActiveData(const QROSInterface_HSActive &hsau)
 	setIP(hsau.IP());
 	setMAC(hsau.MAC());
 	setUptime(hsau.uptime());
-	setUploaded(hsau.uploaded());
-	setDownloaded(hsau.downloaded());
+	setUploaded(hsau.uploaded()<<4);
+	setDownloaded(hsau.downloaded()<<4);
 }
 
 void QUserWidget::setup()
@@ -220,11 +220,11 @@ void QUserWidget::onActiveUserDeleted(const QROSInterface_HSActive &hsau)
 
 }
 
-void QUserWidget::onTochDataReceived(const TorchInfo &ti)
+void QUserWidget::onTochDataReceived(const QROSInterface_Torch &ti)
 {
 	// TODO: This MUST be improved to speed up this process.
-	// I thougth could be done by collecting data up to section and once gathered all
-	// loop through all tree items setting data.
+	// I thougth this could be done by collecting all section data without updating view
+	// and once all have been updated, loop through all tree items to update his data.
 	// Even the data collecter cound be stored in a static and grow-only hash-table/tree.
 
 	QHSUD_WidgetItem *udItem;
@@ -237,10 +237,13 @@ void QUserWidget::onTochDataReceived(const TorchInfo &ti)
 		{
 			auItem = udItem->activeItem(i);
 			ip = auItem->data(QHS_WidgetItemBase::IP, Qt::UserRole).toUInt();
-			if( ip == (uint) ti.ip )
+			if( ip == (uint) ti.targetIP() )
 			{
-				auItem->setUpload(ti.rx);
-				auItem->setDownload(ti.tx);
+				auItem->setUpload(ti.rx());
+				auItem->setUploaded(auItem->uploaded()+ti.rx());
+				auItem->setDownload(ti.tx());
+				auItem->setDownloaded(auItem->downloaded()+ti.rx());
+				auItem->setLastUpdate(QDateTime::currentDateTime());
 			}
 		}
 	}

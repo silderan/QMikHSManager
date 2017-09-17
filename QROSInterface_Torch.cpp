@@ -37,12 +37,11 @@ void QROSInterface_Torch::fromSentence(const ROS::QSentence &s)
 	{
 	case 0:
 	  {
-		static TorchInfo ti;
-		ti.section = s.attribute(".section").toInt();
-		ti.ip = s.attribute("src-address");
-		ti.rx = s.attribute("rx").toLongLong();
-		ti.tx = s.attribute("tx").toLongLong();
-		emit dataReceived(ti);
+		m_section = s.attribute(".section").toInt();
+		m_ip = s.attribute("src-address");
+		m_rx = s.attribute("rx").toLongLong();
+		m_tx = s.attribute("tx").toLongLong();
+		emit dataReceived(*this);
 		break;
 	  }
 	}

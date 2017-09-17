@@ -8,6 +8,7 @@ namespace Utils
 {
 	quint32 rosTimeToInt(const QString &rosTime);
 	QString readableBits(quint64 ll, bool isSpeed);
+	QString readableBytes(quint64 ll, bool isSpeed);
 	QString readableTime(quint64 ll);
 	qint32 ipToInt(QString ip);
 	QString intToIPv4(quint32 i, qint8 bits = -1);

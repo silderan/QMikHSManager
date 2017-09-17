@@ -64,7 +64,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect( &m_hsActive, SIGNAL(dataDeleted(QROSInterface_HSActive)), ui->twUsers, SLOT(onActiveUserDeleted(QROSInterface_HSActive)) );
 	connect( &m_hsActive, SIGNAL(rosInterfaceError(QROSInterfaceError)), this, SLOT(onInterfaceError(QROSInterfaceError)) );
 
-	connect( &m_torch, SIGNAL(dataReceived(TorchInfo)), ui->twUsers, SLOT(onTochDataReceived(TorchInfo)) );
+	connect( &m_torch, SIGNAL(dataReceived(QROSInterface_Torch)), ui->twUsers, SLOT(onTochDataReceived(QROSInterface_Torch)) );
 	connect( &m_torch, SIGNAL(rosInterfaceError(QROSInterfaceError)), this, SLOT(onInterfaceError(QROSInterfaceError)) );
 }
 

@@ -68,6 +68,7 @@ bool QROSInterface_ROSInfo::parseResponse(const ROS::QSentence &s)
 			setError(QROSInterfaceError::ROSVersionUnkown, QObject::tr("Cannot obtain router info"));
 			break;
 		}
+		return true;
 	}
 	else
 	if( s.tag() == "ROSIdentity" )
@@ -90,6 +91,5 @@ bool QROSInterface_ROSInfo::parseResponse(const ROS::QSentence &s)
 		}
 		return true;
 	}
-	else
-		return false;
+	return false;
 }

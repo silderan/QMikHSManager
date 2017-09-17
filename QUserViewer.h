@@ -3,6 +3,7 @@
 
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QDateTime>
 
 #include "Utils.h"
 #include "QROSInterface_HSActive.h"
@@ -13,8 +14,12 @@
 class QHS_WidgetItemBase : public QTreeWidgetItem
 {
 	QString m_id;
+	QDateTime m_lastUpdate;
+
 protected:
 	void setItemData(int column, const QString &visibleText, const QVariant &sortValue, const QString &tip = QString());
+	QString itemText(int column) const { return text(column); }
+	QVariant itemValue(int column) const { return data(column, Qt::UserRole); }
 
 public:
 	static QStringList UserItemLabels;
@@ -32,6 +37,9 @@ public:
 	void setID(const QString &id)			{ m_id = id; }
 	const QString &id() const				{ return m_id; }
 
+	const QDateTime &lastUpdate() const { return m_lastUpdate; }
+	void setLastUpdate(const QDateTime &d) { m_lastUpdate = d; }
+
 	virtual bool operator<(const QTreeWidgetItem &other) const;
 };
 
@@ -41,10 +49,15 @@ public:
 	void setIP(const QString &ip)			{ setItemData(IP, ip, Utils::ipToInt(ip), ip); }
 	void setMAC(const QString &mac)			{ setText(MAC, mac);}
 	void setUserName(const QString &name)	{ setText(IP, name); }
-	void setDownloaded(qlonglong ll)		{ setItemData(Downloaded, Utils::readableBits(ll, false), ll, QString("%1").arg(ll)); }
-	void setUploaded(qlonglong ll)			{ setItemData(Uploaded, Utils::readableBits(ll, false), ll, QString("%1").arg(ll)); }
+
 	void setDownload(qlonglong ll)			{ setItemData(Download, Utils::readableBits(ll, true), ll, QString("%1").arg(ll)); }
+	void setDownloaded(qlonglong ll)		{ setItemData(Downloaded, Utils::readableBytes(ll>>4, false), ll, QString("%1").arg(ll)); }
+	qlonglong downloaded() const			{ return itemValue(Downloaded).toLongLong(); }
+
 	void setUpload(qlonglong ll)			{ setItemData(Upload, Utils::readableBits(ll, true), ll, QString("%1").arg(ll)); }
+	void setUploaded(qlonglong ll)			{ setItemData(Uploaded, Utils::readableBytes(ll>>4, false), ll, QString("%1").arg(ll)); }
+	qlonglong uploaded() const				{ return itemValue(Uploaded).toLongLong(); }
+
 	void setUptime(const QString &u)		{ int t = Utils::rosTimeToInt(u); setItemData(Uptime, u, t, QString("%1").arg(t)); }
 
 	void setActiveData(const QROSInterface_HSActive &hsau);
@@ -95,7 +108,7 @@ public slots:
 	void onUserDataDeleted(const QROSInterface_HSUsers &hsud);
 	void onActiveUserReceived(const QROSInterface_HSActive &hsau, bool firstDeploy);
 	void onActiveUserDeleted(const QROSInterface_HSActive &hsau);
-	void onTochDataReceived(const TorchInfo &ti);
+	void onTochDataReceived(const QROSInterface_Torch &ti);
 };
 
 #endif // QUSERWIDGET_H
