@@ -142,13 +142,24 @@ QHSAD_WidgetItem *QUserWidget::activeItem(const QHSUD_WidgetItem *item, int pos)
 	return dynamic_cast<QHSAD_WidgetItem *>(item->child(pos));
 }
 
-int QUserWidget::findActiveUserPos(QHSUD_WidgetItem::Col col, const QString &mach) const
+QHSAD_WidgetItem *QUserWidget::findActiveUserItem(QHSUD_WidgetItem::Col col, const QString &match) const
 {
-	return -1;
-}
-
-QHSAD_WidgetItem *QUserWidget::findActiveUserItem(QHSUD_WidgetItem::Col col, const QString &mach) const
-{
+	for( int t = 0; t < userCount(); t++ )
+	{
+		for( int a = 0; a < userItem(t)->activeCount(); a++ )
+		{
+			if( col == QHSAD_WidgetItem::ID )
+			{
+				if( userItem(t)->activeItem(a)->id() == match )
+					return userItem(t)->activeItem(a);
+			}
+			else
+			{
+				if( userItem(t)->activeItem(a)->text(col) == match )
+					return userItem(t)->activeItem(a);
+			}
+		}
+	}
 	return Q_NULLPTR;
 }
 
@@ -217,7 +228,10 @@ void QUserWidget::onActiveUserReceived(const QROSInterface_HSActive &hsau, bool 
 
 void QUserWidget::onActiveUserDeleted(const QROSInterface_HSActive &hsau)
 {
-
+	// In this case, ROS only give us the ID.
+	QHSAD_WidgetItem *item = findActiveUserItem(QHS_WidgetItemBase::ID, hsau.id());
+	if( item )
+		delete item;
 }
 
 void QUserWidget::onTochDataReceived(const QROSInterface_Torch &ti)

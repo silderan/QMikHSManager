@@ -93,9 +93,8 @@ public:
 
 	int activeCount(const QHSUD_WidgetItem *item) const;
 	QHSAD_WidgetItem *activeItem(const QHSUD_WidgetItem *item, int pos) const;
-	int findActiveUserPos(QHSAD_WidgetItem::Col col, const QString &mach) const;
 	int findActiveUserPos(const Utils::IPv4 &ip);
-	QHSAD_WidgetItem *findActiveUserItem(QHSAD_WidgetItem::Col col, const QString &mach) const;
+	QHSAD_WidgetItem *findActiveUserItem(QHSAD_WidgetItem::Col col, const QString &match) const;
 	QHSAD_WidgetItem *findActiveUserItem(const QROSInterface_HSActive &hsau) const;
 
 	void updateActiveUser(const QROSInterface_HSActive &hsau, QHSAD_WidgetItem *item);
