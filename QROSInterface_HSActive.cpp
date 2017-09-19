@@ -1,11 +1,11 @@
 #include "QROSInterface_HSActive.h"
+#include "Utils.h"
 
 const QString QROSInterface_HSActive::tagGetallData = QString("G_HSActive");
 const QString QROSInterface_HSActive::tagListenData = QString("L_HSActive");
 
 QROSInterface_HSActive::QROSInterface_HSActive(ROS::Comm *mktComm, QObject *papi) :
-	QROSInterface_Base(mktComm, papi),
-	deployingInitialData(false)
+	QROSInterface_HSUBase(mktComm, new HSActiveUser(), papi)
 {
 	addValidVersions(QROSVersion("5.0.0"), QROSVersion("99.99.99"));
 }
@@ -37,7 +37,7 @@ bool QROSInterface_HSActive::parseResponse(const ROS::QSentence &s)
 		else
 		{
 			fromSentence(s);
-			emit dataReceived(*this, true);
+			emit dataReceived( *(static_cast<HSActiveUser*>(rosData())), true);
 		}
 	}
 	else
@@ -49,9 +49,9 @@ bool QROSInterface_HSActive::parseResponse(const ROS::QSentence &s)
 		{
 			fromSentence(s);
 			if( !s.attribute(".dead").isEmpty() )	// Deleting
-				emit dataDeleted(*this);
+				emit dataDeleted( *(static_cast<HSActiveUser*>(rosData())) );
 			else
-				emit dataReceived(*this, false);
+				emit dataReceived( *(static_cast<HSActiveUser*>(rosData())), false);
 		}
 	}
 	else
@@ -64,12 +64,13 @@ void QROSInterface_HSActive::fromSentence(const ROS::QSentence &s)
 	switch( versionIndex() )
 	{
 	case 0:
-		m_userName = s.attribute("user");
-		m_downloaded = s.attribute("bytes-out").toULongLong();
-		m_uploaded = s.attribute("bytes-in").toULongLong();
-		m_uptime = s.attribute("uptime");
-		m_IP = s.attribute("address");
-		m_MAC = s.attribute("mac-address");
+		static_cast<HSActiveUser*>(rosData())->m_userName = s.attribute("user");
+		static_cast<HSActiveUser*>(rosData())->m_downloadedBits = BYTES_TO_BITS( s.attribute("bytes-out").toULongLong() );
+		static_cast<HSActiveUser*>(rosData())->m_uploadedBits = BYTES_TO_BITS( s.attribute("bytes-in").toULongLong() );
+		static_cast<HSActiveUser*>(rosData())->m_uptime = s.attribute("uptime");
+
+		static_cast<HSActiveUser*>(rosData())->m_IP = s.attribute("address");
+		static_cast<HSActiveUser*>(rosData())->m_MAC = s.attribute("mac-address");
 		break;
 	}
 }

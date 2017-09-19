@@ -45,18 +45,18 @@ private slots:
 	// Mikrotik Comm slots
 	void onComError(ROS::Comm::CommError, QAbstractSocket::SocketError);
 	void onInterfaceError(const QROSInterfaceError &err);
-	void onROSInfoReceived(const QROSInterface_ROSInfo &rosInfo);
+	void onROSInfoReceived(const ROSInfoData &rosInfo);
 	void onStateChanged(ROS::Comm::CommState s);
 	void onLoginChanged(ROS::Comm::LoginState s);
 
-	void onHSInfoReceived(const QROSInterface_HSInfo &hsinfo);
-	void onHSProfileReceived(const QROSInterface_HSInfo &hsinfo);
-	void onHSAllInfoReceived(const QROSInterface_HSInfo &hsinfo);
+	void onHSInfoReceived(const HSInfoData &hsinfo);
+	void onHSProfileReceived(const HSInfoData &hsinfo);
+	void onHSAllInfoReceived(const HSInfoData &hsinfo);
 
 	void onROSVersionReceived(const QROSVersion &rv);
 	void onROSIdentityReceived(const QString &id);
 
-	void onAllUserDataReceived();
+	void onAllUserDataReceived(const HSUserData &hsud);
 };
 
 #endif // MAINWINDOW_H

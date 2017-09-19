@@ -3,14 +3,20 @@
 
 #include "QROSInterface_Base.h"
 
-class QROSInterface_ROSInfo : public QROSInterface_Base
+struct ROSInfoData : public ROSInterfaceBaseData
 {
-	Q_OBJECT
-
 	QROSVersion m_rosVersion;
 	QString m_identity;
 	QString m_boardName;
 	QString m_architecture;
+
+	QString toString() const { return QString("%1. %2 %3 (%4)").
+				arg(m_identity, m_boardName, m_rosVersion.toString(), m_architecture); }
+};
+
+class QROSInterface_ROSInfo : public QROSInterface_Base
+{
+	Q_OBJECT
 
 protected:
 	void clear();
@@ -18,20 +24,19 @@ protected:
 	virtual bool doRequest();
 	virtual bool parseResponse(const ROS::QSentence &s);
 
-public:
-	QROSInterface_ROSInfo(ROS::Comm *mktCom, QObject *papi = Q_NULLPTR) : QROSInterface_Base(mktCom, papi) { }
-
-	const QROSVersion &rosVersion() const { return m_rosVersion; }
-	void setRosVersion(const QROSVersion &rv) { m_rosVersion = rv; }
+private:
+	const ROSInfoData &rosInfoData() const { return *static_cast<const ROSInfoData*>(rosData()); }
+	ROSInfoData &rosInfoData() { return *static_cast<ROSInfoData*>(rosData()); }
 
 	static QList<ROS::QSentence> getROSVersionSentences();
-	bool fromROSSentence( const ROS::QSentence &s );
 
-	QString toString() const { return QString("%1. %2 %3 (%4)").arg(m_identity, m_boardName, m_rosVersion.toString(), m_architecture); }
+public:
+	QROSInterface_ROSInfo(ROS::Comm *mktCom, QObject *papi = Q_NULLPTR);
 
+	QString toString() const { return rosInfoData().toString(); }
 signals:
 	void versionReceived(const QROSVersion &rv);
-	void infoReceived(const QROSInterface_ROSInfo &ri);
+	void infoReceived(const ROSInfoData &ri);
 	void identityReceived(const QString &id);
 };
 

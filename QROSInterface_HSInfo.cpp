@@ -6,18 +6,18 @@ const QString QROSInterface_HSInfo::tagHSIPAddress = QString("G_HSIPAddress");
 const QString QROSInterface_HSInfo::tagHSIPNetwork = QString("G_HSIPNetwork");
 
 QROSInterface_HSInfo::QROSInterface_HSInfo(ROS::Comm *mktComm, QObject *papi) :
-	QROSInterface_Base(mktComm, papi)
+	QROSInterface_Base(mktComm, new HSInfoData(), papi)
 {
 	addValidVersions("4.0.0", "99.99.99");
 }
 
 void QROSInterface_HSInfo::clear()
 {
-	m_name.clear();
-	m_network.clear();
-	m_ifaceName.clear();
-	m_profileName.clear();
-	m_dnsName.clear();
+	hotspotInfoData().m_name.clear();
+	hotspotInfoData().m_network.clear();
+	hotspotInfoData().m_ifaceName.clear();
+	hotspotInfoData().m_profileName.clear();
+	hotspotInfoData().m_dnsName.clear();
 	m_ipNetworkAquired = false;
 }
 
@@ -46,7 +46,7 @@ bool QROSInterface_HSInfo::parseResponse(const ROS::QSentence &s)
 	{
 		if( s.getResultType() == ROS::QSentence::Done )	// End.
 		{
-			if( m_profileName.isEmpty() )
+			if( hotspotInfoData().m_profileName.isEmpty() )
 			{
 				setError(QROSInterfaceError::ROSBadConfig, tr("Sorry, the router has more that one hotspot server.\n"
 															  "Sadly, this program cannot create new hotspot setup for you.\n"
@@ -54,13 +54,13 @@ bool QROSInterface_HSInfo::parseResponse(const ROS::QSentence &s)
 			}
 			else
 			{
-				emit infoReceived(*this);
+				emit infoReceived(hotspotInfoData());
 				mktComm()->sendSentence( ROS::QSentence( "/ip/hotspot/profile/getall", tagServerPrfl ) );
 			}
 		}
 		else if( s.getResultType() == ROS::QSentence::Reply )
 		{
-			if( !m_profileName.isEmpty() )
+			if( !hotspotInfoData().m_profileName.isEmpty() )
 				setError(QROSInterfaceError::ROSBadConfig, tr("Sorry, the router has more that one hotspot server.\n"
 															  "Sadly, this program is not designet to handled this.\n"
 															  "Please, remove one of them and reconect to router later on."));
@@ -74,10 +74,10 @@ bool QROSInterface_HSInfo::parseResponse(const ROS::QSentence &s)
 	{
 		if( s.getResultType() == ROS::QSentence::Done )	// End.
 		{
-			if( (int)m_hsIP == (int)0 )
+			if( (int)hotspotInfoData().m_hsIP == (int)0 )
 				setError(QROSInterfaceError::ROSBadConfig, tr("Sorry, the hotspot profile (%1) doesn't have defined any hotspot-address.\n"
 															  "Sadly, this program is not designet to handled this.\n"
-															  "Please, configure hotspot properly and reconect to router later on.").arg(m_profileName));
+															  "Please, configure hotspot properly and reconect to router later on.").arg(hotspotInfoData().m_profileName));
 			else
 				mktComm()->sendSentence( ROS::QSentence( "/ip/address/getall", tagHSIPAddress ) );
 		}
@@ -90,13 +90,13 @@ bool QROSInterface_HSInfo::parseResponse(const ROS::QSentence &s)
 	{
 		if( s.getResultType() == ROS::QSentence::Done )	// End.
 		{
-			if( !m_ipNetwork.inRange(m_hsIP) )
+			if( !hotspotInfoData().m_ipNetwork.inRange(hotspotInfoData().m_hsIP) )
 				setError(QROSInterfaceError::ROSBadConfig, tr("Sorry, there is no valid addres network on the hotspot interface (%1).\n"
 															  "Sadly, this program is not designet to handled this.\n"
 															  "Please, set a valid address network on this interface or \n"
-															  "modify the hotspot-address to fit into the address netkork.").arg(m_ifaceName));
+															  "modify the hotspot-address to fit into the address netkork.").arg(hotspotInfoData().m_ifaceName));
 			else
-				emit allDataReceived(*this);
+				emit allDataReceived(hotspotInfoData());
 		}
 		else
 		if( s.getResultType() == ROS::QSentence::Reply )
@@ -113,22 +113,22 @@ void QROSInterface_HSInfo::profileFromSentence(const ROS::QSentence &s)
 	switch( versionIndex() )
 	{
 	case 0:
-		if( s.attribute("name") == m_profileName )
+		if( s.attribute("name") == hotspotInfoData().m_profileName )
 		{
-			m_dnsName = s.attribute("dns-name");
-			if( m_dnsName.isEmpty() )
-				m_dnsName = "<Undefined>";
+			hotspotInfoData().m_dnsName = s.attribute("dns-name");
+			if( hotspotInfoData().m_dnsName.isEmpty() )
+				hotspotInfoData().m_dnsName = "<Undefined>";
 			foreach( QString s, s.attribute("login-by").split(",") )
 			{
-				if( s == "mac" )				m_loginBy.MAC = 1;
-				else if( s == "cookie" )		m_loginBy.Cookie = 1;
-				else if( s == "http-chap" )		m_loginBy.CHAP = 1;
-				else if( s == "https" )			m_loginBy.HTTPS = 1;
-				else if( s == "http-pap" )		m_loginBy.PAP = 1;
-				else if( s == "trial" )			m_loginBy.Trial = 1;
-				else if( s == "mac-cookie" )	m_loginBy.MAC_Cookie = 1;
+				if( s == "mac" )				hotspotInfoData().m_loginBy.MAC = 1;
+				else if( s == "cookie" )		hotspotInfoData().m_loginBy.Cookie = 1;
+				else if( s == "http-chap" )		hotspotInfoData().m_loginBy.CHAP = 1;
+				else if( s == "https" )			hotspotInfoData().m_loginBy.HTTPS = 1;
+				else if( s == "http-pap" )		hotspotInfoData().m_loginBy.PAP = 1;
+				else if( s == "trial" )			hotspotInfoData().m_loginBy.Trial = 1;
+				else if( s == "mac-cookie" )	hotspotInfoData().m_loginBy.MAC_Cookie = 1;
 			}
-			m_hsIP.fromString(s.attribute("hotspot-address"));
+			hotspotInfoData().m_hsIP.fromString(s.attribute("hotspot-address"));
 		}
 		break;
 	}
@@ -139,11 +139,11 @@ void QROSInterface_HSInfo::ipHSNetworkFromSentence(const ROS::QSentence &s)
 	switch( versionIndex() )
 	{
 	case 0:
-		if( (s.attribute("interface") == m_ifaceName) )
+		if( (s.attribute("interface") == hotspotInfoData().m_ifaceName) )
 		{
 			Utils::IPv4Net tempIP(s.attribute("address"));
-			if( tempIP.inRange(m_hsIP) )
-				m_ipNetwork = tempIP;
+			if( tempIP.inRange(hotspotInfoData().m_hsIP) )
+				hotspotInfoData().m_ipNetwork = tempIP;
 		}
 		break;
 	}
@@ -154,14 +154,14 @@ void QROSInterface_HSInfo::infoFromSentence(const ROS::QSentence &s)
 	switch( versionIndex() )
 	{
 	case 0:
-		m_name				= s.attribute("name");
-		m_ifaceName			= s.attribute("interface");
-		m_poolName			= s.attribute("address-pool");
-		m_profileName		= s.attribute("profile");
-		m_addrPerMAC		= s.attribute("addresses-per-mac").toInt();
-		m_idleTimeout		= Utils::rosTimeToInt(s.attribute("idle-timeout"));
-		m_keepAliveTimeout	= Utils::rosTimeToInt(s.attribute("keepalive-timeout"));
-		m_loginTimeout		= Utils::rosTimeToInt(s.attribute("login-timeout"));
+		hotspotInfoData().m_name				= s.attribute("name");
+		hotspotInfoData().m_ifaceName			= s.attribute("interface");
+		hotspotInfoData().m_poolName			= s.attribute("address-pool");
+		hotspotInfoData().m_profileName			= s.attribute("profile");
+		hotspotInfoData().m_addrPerMAC			= s.attribute("addresses-per-mac").toInt();
+		hotspotInfoData().m_idleTimeout			= Utils::rosTimeToInt(s.attribute("idle-timeout"));
+		hotspotInfoData().m_keepAliveTimeout	= Utils::rosTimeToInt(s.attribute("keepalive-timeout"));
+		hotspotInfoData().m_loginTimeout		= Utils::rosTimeToInt(s.attribute("login-timeout"));
 		break;
 	}
 }

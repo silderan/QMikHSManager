@@ -2,7 +2,8 @@
 
 const QString QROSInterface_Torch::tagTorchTool = QString("X_TorchTool");
 
-QROSInterface_Torch::QROSInterface_Torch(ROS::Comm *mktComm, QObject *papi) : QROSInterface_Base(mktComm, papi)
+QROSInterface_Torch::QROSInterface_Torch(ROS::Comm *mktComm, QObject *papi) :
+	QROSInterface_Base(mktComm, new TorchData(), papi)
 {
 	addValidVersions("0.0.0", "99.99.99");
 }
@@ -37,11 +38,11 @@ void QROSInterface_Torch::fromSentence(const ROS::QSentence &s)
 	{
 	case 0:
 	  {
-		m_section = s.attribute(".section").toInt();
-		m_ip = s.attribute("src-address");
-		m_rx = s.attribute("rx").toLongLong();
-		m_tx = s.attribute("tx").toLongLong();
-		emit dataReceived(*this);
+		torchData().m_section = s.attribute(".section").toInt();
+		torchData().m_ip = s.attribute("src-address");
+		torchData().m_rx = s.attribute("rx").toLongLong();
+		torchData().m_tx = s.attribute("tx").toLongLong();
+		emit dataReceived(torchData());
 		break;
 	  }
 	}

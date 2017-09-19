@@ -18,6 +18,15 @@ void QHS_WidgetItemBase::setItemData(int column, const QString &visibleText, con
 	setData(column, Qt::ToolTipRole, tip);
 }
 
+void QHS_WidgetItemBase::setUserData(const ROSHSUserBase &hsb)
+{
+	setUserName( hsb.m_userName );
+	setID( hsb.m_id );
+	setUptime( hsb.m_uptime );
+	setUploadedBits( hsb.m_uploadedBits );
+	setDownloadedBits( hsb.m_downloadedBits );
+}
+
 bool QHS_WidgetItemBase::operator<(const QTreeWidgetItem &other) const
 {
 	int column = this->treeWidget()->sortColumn();
@@ -28,10 +37,35 @@ bool QHS_WidgetItemBase::operator<(const QTreeWidgetItem &other) const
 	return text(column) < other.text(column);
 }
 
-void QHSUD_WidgetItem::setUserData(const QROSInterface_HSUsers &hsud)
+bool QHS_WidgetItemBase::dataMatch(int col, QString match)
 {
-	setID( hsud.id() );
-	setText( 0, hsud.userName() );
+	switch( col )
+	{
+	case ID: return id() == match;
+	case UName: return userName() == match;
+	default:
+		return text(col) == match;
+	}
+}
+
+void QHSUD_WidgetItem::setUserData(const HSUserData &hsud)
+{
+	QHS_WidgetItemBase::setUserData(hsud);
+
+	if( !id().isEmpty() )
+	{
+		if( hsud.m_userPass.isEmpty() )
+			setText( 0, QString("%1").arg(hsud.m_userName) );
+		else
+			setText( 0, QString("%1/%2").arg(hsud.m_userName, hsud.m_userPass) );
+	}
+	else
+	{
+		if( hsud.m_userPass.isEmpty() )
+			setText( 0, QObject::tr("[Deleted user] %1").arg(hsud.m_userName) );
+		else
+			setText( 0, QObject::tr("[Deleted user] %1/%2").arg(hsud.m_userName, hsud.m_userPass) );
+	}
 }
 
 QHSAD_WidgetItem *QHSUD_WidgetItem::activeItem(int index) const
@@ -40,14 +74,25 @@ QHSAD_WidgetItem *QHSUD_WidgetItem::activeItem(int index) const
 }
 
 
-void QHSAD_WidgetItem::setActiveData(const QROSInterface_HSActive &hsau)
+QHSAD_WidgetItem::~QHSAD_WidgetItem()
 {
-	setID(hsau.id());
-	setIP(hsau.IP());
-	setMAC(hsau.MAC());
-	setUptime(hsau.uptime());
-	setUploaded(hsau.uploaded()<<4);
-	setDownloaded(hsau.downloaded()<<4);
+	// User data item has no ID when it has been deleted but there is
+	// active users data.
+	// So, when the last one active user is deleted, we must delete "parent" user data
+	if( userDataItem() && userDataItem()->id().isEmpty() )
+		delete userDataItem();
+}
+
+QHSUD_WidgetItem *QHSAD_WidgetItem::userDataItem()
+{
+	return dynamic_cast<QHSUD_WidgetItem*>(parent());
+}
+
+void QHSAD_WidgetItem::setUserData(const HSActiveUser &hsau)
+{
+	QHS_WidgetItemBase::setUserData(hsau);
+	setIP( hsau.m_IP );
+	setMAC( hsau.m_MAC );
 }
 
 void QUserWidget::setup()
@@ -62,10 +107,10 @@ int QUserWidget::userCount() const
 	return topLevelItemCount();
 }
 
-QHSAD_WidgetItem *QHSUD_WidgetItem::activeItem(const QROSInterface_HSActive &hsad) const
+QHSAD_WidgetItem *QHSUD_WidgetItem::activeItem(const HSActiveUser &hsad) const
 {
 	for( int i = 0; i < activeCount(); i++ )
-		if( activeItem(i)->id() == hsad.id() )
+		if( activeItem(i)->id() == hsad.m_id )
 			return activeItem(i);
 
 	return Q_NULLPTR;
@@ -76,18 +121,12 @@ QHSUD_WidgetItem *QUserWidget::userItem(int pos) const
 	return dynamic_cast<QHSUD_WidgetItem*>(topLevelItem(pos));
 }
 
-int QUserWidget::findUserDataPos(QHSUD_WidgetItem::Col col, const QString &mach) const
+int QUserWidget::findUserDataPos(QHSUD_WidgetItem::Col col, const QString &match) const
 {
 	for( int i = userCount()-1; i >= 0; i-- )
 	{
-		if( col == QHS_WidgetItemBase::ID )
-		{
-			if( userItem(i)->id() == mach )
-				return i;
-		}
-		else
-			if( userItem(i)->text(col) == mach )
-				return i;
+		if( userItem(i)->dataMatch(col, match) )
+			return i;
 	}
 	return -1;
 }
@@ -105,27 +144,27 @@ QHSUD_WidgetItem *QUserWidget::findUserDataItem(QHSUD_WidgetItem::Col c, const Q
  * @param hsud the HotSpotUserData class
  * @return the TopLevelItem or null
  */
-QHSUD_WidgetItem *QUserWidget::findUserDataItem(const QROSInterface_HSUsers &hsud) const
+QHSUD_WidgetItem *QUserWidget::findUserDataItem(const HSUserData &hsud) const
 {
 	QHSUD_WidgetItem *item;
-	if( !hsud.id().isEmpty() && ((item = findUserDataItem(QHSUD_WidgetItem::ID, hsud.id())) != Q_NULLPTR) )
+	if( !hsud.m_id.isEmpty() && ((item = findUserDataItem(QHSUD_WidgetItem::ID, hsud.m_id)) != Q_NULLPTR) )
 		return item;
-	if( !hsud.userName().isEmpty() && ((item = findUserDataItem(QHSUD_WidgetItem::IP, hsud.userName())) != Q_NULLPTR) )
+	if( !hsud.m_userName.isEmpty() && ((item = findUserDataItem(QHSUD_WidgetItem::UName, hsud.m_userName)) != Q_NULLPTR) )
 		return item;
 	return Q_NULLPTR;
 }
 
-void QUserWidget::updateUserData(const QROSInterface_HSUsers &hsud, QHSUD_WidgetItem *item)
+void QUserWidget::updateUserData(const HSUserData &hsud, QHSUD_WidgetItem *item)
 {
 	item->setUserData(hsud);
 }
 
-void QUserWidget::updateUserData(const QROSInterface_HSUsers &hsud)
+void QUserWidget::updateUserData(const HSUserData &hsud)
 {
-	updateUserData(hsud, findUserDataItem(QHSUD_WidgetItem::ID, hsud.id()));
+	updateUserData(hsud, findUserDataItem( QHSUD_WidgetItem::ID, hsud.m_id) );
 }
 
-void QUserWidget::addUserData(const QROSInterface_HSUsers &hsud)
+void QUserWidget::addUserData(const HSUserData &hsud)
 {
 	QHSUD_WidgetItem *item = new QHSUD_WidgetItem();
 	addTopLevelItem(item);
@@ -147,53 +186,49 @@ QHSAD_WidgetItem *QUserWidget::findActiveUserItem(QHSUD_WidgetItem::Col col, con
 	for( int t = 0; t < userCount(); t++ )
 	{
 		for( int a = 0; a < userItem(t)->activeCount(); a++ )
-		{
-			if( col == QHSAD_WidgetItem::ID )
-			{
-				if( userItem(t)->activeItem(a)->id() == match )
-					return userItem(t)->activeItem(a);
-			}
-			else
-			{
-				if( userItem(t)->activeItem(a)->text(col) == match )
-					return userItem(t)->activeItem(a);
-			}
-		}
+			if( userItem(t)->activeItem(a)->dataMatch(col, match) )
+				return userItem(t)->activeItem(a);
 	}
 	return Q_NULLPTR;
 }
 
-QHSAD_WidgetItem *QUserWidget::findActiveUserItem(const QROSInterface_HSActive &hsau) const
+QHSAD_WidgetItem *QUserWidget::findActiveUserItem(const HSActiveUser &hsau) const
 {
-	QHSUD_WidgetItem *udItem = findUserDataItem(QHSAD_WidgetItem::IP, hsau.userName());
+	QHSUD_WidgetItem *udItem = findUserDataItem(QHSAD_WidgetItem::UName, hsau.m_userName);
 	if( udItem )
 		return udItem->activeItem(hsau);
 	return Q_NULLPTR;
 }
 
-void QUserWidget::updateActiveUser(const QROSInterface_HSActive &hsau, QHSAD_WidgetItem *item)
+void QUserWidget::updateActiveUser(const HSActiveUser &hsau, QHSAD_WidgetItem *item)
 {
-	item->setActiveData(hsau);
+	item->setUserData(hsau);
 }
 
-void QUserWidget::updateActiveUser(const QROSInterface_HSActive &hsau)
+void QUserWidget::updateActiveUser(const HSActiveUser &hsau)
 {
 
 }
 
-void QUserWidget::addActiveUser(const QROSInterface_HSActive &hsau)
+void QUserWidget::addActiveUser(const HSActiveUser &hsau)
 {
-	QHSUD_WidgetItem *item = findUserDataItem(QHSAD_WidgetItem::IP, hsau.userName());
-	Q_ASSERT(item);
-	if( item )
+	QHSUD_WidgetItem *item = findUserDataItem(QHSAD_WidgetItem::UName, hsau.m_userName);
+
+	if( !item )
 	{
-		QHSAD_WidgetItem *au_item = new QHSAD_WidgetItem();
-		item->addChild(au_item);
-		updateActiveUser(hsau, au_item);
+		// If there isn't user data, could be becouse the data has been deleted.
+		// But the active users are still conected.
+		// So, let's create a dummy user data.
+		// TODO:
+		return;
 	}
+
+	QHSAD_WidgetItem *au_item = new QHSAD_WidgetItem();
+	item->addChild(au_item);
+	updateActiveUser(hsau, au_item);
 }
 
-void QUserWidget::onUserDataReceived(const QROSInterface_HSUsers &hsud, bool firstDeploy)
+void QUserWidget::onUserDataReceived(const HSUserData &hsud, bool firstDeploy)
 {
 	if( firstDeploy )
 		addUserData(hsud);
@@ -207,12 +242,12 @@ void QUserWidget::onUserDataReceived(const QROSInterface_HSUsers &hsud, bool fir
 	}
 }
 
-void QUserWidget::onUserDataDeleted(const QROSInterface_HSUsers &hsud)
+void QUserWidget::onUserDataDeleted(const HSUserData &hsud)
 {
 
 }
 
-void QUserWidget::onActiveUserReceived(const QROSInterface_HSActive &hsau, bool firstDeploy)
+void QUserWidget::onActiveUserReceived(const HSActiveUser &hsau, bool firstDeploy)
 {
 	if( firstDeploy )
 		addActiveUser(hsau);
@@ -226,15 +261,15 @@ void QUserWidget::onActiveUserReceived(const QROSInterface_HSActive &hsau, bool 
 	}
 }
 
-void QUserWidget::onActiveUserDeleted(const QROSInterface_HSActive &hsau)
+void QUserWidget::onActiveUserDeleted(const HSActiveUser &hsau)
 {
 	// In this case, ROS only give us the ID.
-	QHSAD_WidgetItem *item = findActiveUserItem(QHS_WidgetItemBase::ID, hsau.id());
+	QHSAD_WidgetItem *item = findActiveUserItem( QHS_WidgetItemBase::ID, hsau.m_id );
 	if( item )
 		delete item;
 }
 
-void QUserWidget::onTochDataReceived(const QROSInterface_Torch &ti)
+void QUserWidget::onTochDataReceived(const TorchData &td)
 {
 	// TODO: This MUST be improved to speed up this process.
 	// I thougth this could be done by collecting all section data without updating view
@@ -251,12 +286,12 @@ void QUserWidget::onTochDataReceived(const QROSInterface_Torch &ti)
 		{
 			auItem = udItem->activeItem(i);
 			ip = auItem->data(QHS_WidgetItemBase::IP, Qt::UserRole).toUInt();
-			if( ip == (uint) ti.targetIP() )
+			if( ip == (uint) td.m_ip )
 			{
-				auItem->setUpload(ti.rx());
-				auItem->setUploaded(auItem->uploaded()+ti.rx());
-				auItem->setDownload(ti.tx());
-				auItem->setDownloaded(auItem->downloaded()+ti.rx());
+				auItem->setUpload(td.m_rx);
+				auItem->setUploadedBits(auItem->uploadedBits()+td.m_rx);
+				auItem->setDownload(td.m_tx);
+				auItem->setDownloadedBits(auItem->downloadedBits()+td.m_rx);
 				auItem->setLastUpdate(QDateTime::currentDateTime());
 			}
 		}

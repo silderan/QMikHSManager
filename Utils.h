@@ -4,6 +4,9 @@
 #include <QString>
 #include <QList>
 
+#define BITS_TO_BYTES(b)	(b>>3)
+#define BYTES_TO_BITS(B)	(B<<3)
+
 namespace Utils
 {
 	quint32 rosTimeToInt(const QString &rosTime);

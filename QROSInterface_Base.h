@@ -79,26 +79,28 @@ public:
 	void clearError() { m_errorCode = NoEror; m_errorText.clear(); }
 };
 
+struct ROSInterfaceBaseData
+{
+	QString m_id;
+	qint64 m_requestTime;
+	qint64 m_responseTime;
+};
 
 class QROSInterface_Base : public QObject
 {
 	Q_OBJECT
 
-protected:
-
 	ROS::Comm *m_mktComm;
+	ROSInterfaceBaseData *m_rosData;
+	int m_validVersionIndex;
 	QROSVersion m_rosVersion;
 	QROSVersionChecker m_rosVersionChecker;
-	int m_validVersionIndex;
 	QROSInterfaceError m_lastError;
-	QString m_id;
-	qint64 m_requestTime;
-	qint64 m_responseTime;
 
-	void setID(const QString &id) { m_id = id; }
+protected:
 
 	void setError(QROSInterfaceError::ErrorCode e, const QString &text = QString());
-	void clearError();
+	void clearError() { m_lastError.clearError(); }
 
 	/**
 	 * @brief doRequest
@@ -113,17 +115,14 @@ protected:
 	int versionIndex() const;
 
 public:
-	QROSInterface_Base(ROS::Comm *mktComm, QObject *papi);
+	QROSInterface_Base(ROS::Comm *mktComm, ROSInterfaceBaseData *ros_data, QObject *papi);
 
 	bool setROSVersion(const QROSVersion &rv) { m_rosVersion = rv; return checkROSVersion(); }
 	const QROSVersion rosVersion() const { return m_rosVersion; }
+	ROSInterfaceBaseData *rosData()	{ return m_rosData; }
+	const ROSInterfaceBaseData *rosData() const { return m_rosData; }
 
 	ROS::Comm *mktComm() const { return m_mktComm; }
-
-	const QString &id() const { return m_id; }
-
-	qint64 requestTime() const { return m_requestTime; }
-	qint64 responseTime() const { return m_responseTime; }
 
 	const QROSInterfaceError &lastError() const { return m_lastError; }
 

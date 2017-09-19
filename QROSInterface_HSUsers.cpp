@@ -1,11 +1,11 @@
 #include "QROSInterface_HSUsers.h"
+#include "Utils.h"
 
 const QString QROSInterface_HSUsers::tagGetallData = QString("G_HSUser");
 const QString QROSInterface_HSUsers::tagListenData = QString("L_HSUser");
 
 QROSInterface_HSUsers::QROSInterface_HSUsers(ROS::Comm *mktComm, QObject *papi) :
-	QROSInterface_Base(mktComm, papi),
-	deployingInitialData(false)
+	QROSInterface_HSUBase(mktComm, new HSUserData(), papi)
 {
 	addValidVersions(QROSVersion("5.0.0"), QROSVersion("99.99.99"));
 }
@@ -33,12 +33,12 @@ bool QROSInterface_HSUsers::parseResponse(const ROS::QSentence &s)
 			for( int i = 0; i < queuedSentence.count(); i++ )
 				parseResponse(queuedSentence[i]);
 			queuedSentence.clear();
-			emit allDataReceived();
+			emit allDataReceived( *(static_cast<HSUserData*>(rosData())) );
 		}
 		else
 		{
 			fromSentence(s);
-			emit dataReceived(*this, true);
+			emit dataReceived( *(static_cast<HSUserData*>(rosData())), true );
 		}
 	}
 	else
@@ -50,9 +50,9 @@ bool QROSInterface_HSUsers::parseResponse(const ROS::QSentence &s)
 		{
 			fromSentence(s);
 			if( !s.attribute(".dead").isEmpty() )	// Deleting
-				emit dataDeleted(*this);
+				emit dataDeleted( *(static_cast<HSUserData*>(rosData())) );
 			else
-				emit dataReceived(*this, false);
+				emit dataReceived( *(static_cast<HSUserData*>(rosData())), false );
 		}
 	}
 	else
@@ -65,11 +65,12 @@ void QROSInterface_HSUsers::fromSentence(const ROS::QSentence &s)
 	switch( versionIndex() )
 	{
 	case 0:
-		m_userName = s.attribute("name");
-		m_userPass = s.attribute("password");
-		m_downloaded = s.attribute("bytes-out").toULongLong();
-		m_uploaded = s.attribute("bytes-in").toULongLong();
-		m_uptime = s.attribute("uptime");
+		static_cast<HSUserData*>(rosData())->m_userName = s.attribute("name");
+		static_cast<HSUserData*>(rosData())->m_downloadedBits = BYTES_TO_BITS( s.attribute("bytes-out").toULongLong() );
+		static_cast<HSUserData*>(rosData())->m_uploadedBits = BYTES_TO_BITS( s.attribute("bytes-in").toULongLong() );
+		static_cast<HSUserData*>(rosData())->m_uptime = s.attribute("uptime");
+
+		static_cast<HSUserData*>(rosData())->m_userPass = s.attribute("password");
 		break;
 	}
 }

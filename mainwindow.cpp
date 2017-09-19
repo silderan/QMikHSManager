@@ -50,21 +50,21 @@ MainWindow::MainWindow(QWidget *parent) :
 	connect( &m_rosInfo, &QROSInterface_ROSInfo::rosInterfaceError, this, &MainWindow::onInterfaceError );
 	connect( &m_rosInfo, &QROSInterface_ROSInfo::identityReceived, this, &MainWindow::onROSIdentityReceived );
 
-	connect( &m_hsInfo, SIGNAL(infoReceived(QROSInterface_HSInfo)), this, SLOT(onHSInfoReceived(QROSInterface_HSInfo)) );
-	connect( &m_hsInfo, SIGNAL(profileReceived(QROSInterface_HSInfo)), this, SLOT(onHSProfileReceived(QROSInterface_HSInfo)) );
-	connect( &m_hsInfo, SIGNAL(allDataReceived(QROSInterface_HSInfo)), this, SLOT(onHSAllInfoReceived(QROSInterface_HSInfo)) );
+	connect( &m_hsInfo, SIGNAL(infoReceived(HSInfoData)), this, SLOT(onHSInfoReceived(HSInfoData)) );
+	connect( &m_hsInfo, SIGNAL(profileReceived(HSInfoData)), this, SLOT(onHSProfileReceived(HSInfoData)) );
+	connect( &m_hsInfo, SIGNAL(allDataReceived(HSInfoData)), this, SLOT(onHSAllInfoReceived(HSInfoData)) );
 	connect( &m_hsInfo, SIGNAL(rosInterfaceError(QROSInterfaceError)), this, SLOT(onInterfaceError(QROSInterfaceError)) );
 
-	connect( &m_hsUsers, SIGNAL(dataReceived(QROSInterface_HSUsers,bool)), ui->twUsers, SLOT(onUserDataReceived(QROSInterface_HSUsers,bool)) );
-	connect( &m_hsUsers, SIGNAL(dataDeleted(QROSInterface_HSUsers)), ui->twUsers, SLOT(onUserDataDeleted(QROSInterface_HSUsers)) );
-	connect( &m_hsUsers, SIGNAL(allDataReceived()), this, SLOT(onAllUserDataReceived()) );
+	connect( &m_hsUsers, SIGNAL(dataReceived(HSUserData,bool)), ui->twUsers, SLOT(onUserDataReceived(HSUserData,bool)) );
+	connect( &m_hsUsers, SIGNAL(dataDeleted(HSUserData)), ui->twUsers, SLOT(onUserDataDeleted(HSUserData)) );
+	connect( &m_hsUsers, SIGNAL(allDataReceived(HSUserData)), this, SLOT(onAllUserDataReceived(HSUserData)) );
 	connect( &m_hsUsers, SIGNAL(rosInterfaceError(QROSInterfaceError)), this, SLOT(onInterfaceError(QROSInterfaceError)) );
 
-	connect( &m_hsActive, SIGNAL(dataReceived(QROSInterface_HSActive,bool)), ui->twUsers, SLOT(onActiveUserReceived(QROSInterface_HSActive,bool)) );
-	connect( &m_hsActive, SIGNAL(dataDeleted(QROSInterface_HSActive)), ui->twUsers, SLOT(onActiveUserDeleted(QROSInterface_HSActive)) );
+	connect( &m_hsActive, SIGNAL(dataReceived(HSActiveUser,bool)), ui->twUsers, SLOT(onActiveUserReceived(HSActiveUser,bool)) );
+	connect( &m_hsActive, SIGNAL(dataDeleted(HSActiveUser)), ui->twUsers, SLOT(onActiveUserDeleted(HSActiveUser)) );
 	connect( &m_hsActive, SIGNAL(rosInterfaceError(QROSInterfaceError)), this, SLOT(onInterfaceError(QROSInterfaceError)) );
 
-	connect( &m_torch, SIGNAL(dataReceived(QROSInterface_Torch)), ui->twUsers, SLOT(onTochDataReceived(QROSInterface_Torch)) );
+	connect( &m_torch, SIGNAL(dataReceived(TorchData)), ui->twUsers, SLOT(onTochDataReceived(TorchData)) );
 	connect( &m_torch, SIGNAL(rosInterfaceError(QROSInterfaceError)), this, SLOT(onInterfaceError(QROSInterfaceError)) );
 }
 
@@ -143,7 +143,7 @@ void MainWindow::onInterfaceError(const QROSInterfaceError &err)
 	QMessageBox::warning(this, objectName(), tr("ROS Interface error:\n%1").arg(s));
 }
 
-void MainWindow::onROSInfoReceived(const QROSInterface_ROSInfo &rosInfo)
+void MainWindow::onROSInfoReceived(const ROSInfoData &rosInfo)
 {
 	setWindowTitle(rosInfo.toString());
 }
@@ -198,7 +198,7 @@ void MainWindow::onLoginChanged(ROS::Comm::LoginState s)
 
 void MainWindow::onROSVersionReceived(const QROSVersion &rv)
 {
-	setWindowTitle(m_rosInfo.toString());
+	setWindowTitle(rv.toString());
 	// TODO: check ROS Version on all other data classes and request data
 	if( !m_hsUsers.setROSVersion(rv) ||
 		!m_hsActive.setROSVersion(rv) ||
@@ -218,24 +218,25 @@ void MainWindow::onROSIdentityReceived(const QString &id)
 	setWindowTitle(m_rosInfo.toString());
 }
 
-void MainWindow::onHSInfoReceived(const QROSInterface_HSInfo &hsinfo)
+void MainWindow::onHSInfoReceived(const HSInfoData &hsinfo)
 {
-
+	Q_UNUSED(hsinfo);
 }
 
-void MainWindow::onHSProfileReceived(const QROSInterface_HSInfo &hsinfo)
+void MainWindow::onHSProfileReceived(const HSInfoData &hsinfo)
 {
-
+	Q_UNUSED(hsinfo);
 }
 
-void MainWindow::onHSAllInfoReceived(const QROSInterface_HSInfo &hsinfo)
+void MainWindow::onHSAllInfoReceived(const HSInfoData &hsinfo)
 {
-	m_torch.setInterface(hsinfo.interface());
-	m_torch.setSrcAddress(hsinfo.hotspotNetwork());
+	m_torch.setInterface(hsinfo.m_ifaceName);
+	m_torch.setSrcAddress(hsinfo.m_ipNetwork);
 	m_torch.requestData();
 }
 
-void MainWindow::onAllUserDataReceived()
+void MainWindow::onAllUserDataReceived(const HSUserData &hsud)
 {
+	Q_UNUSED(hsud);
 	m_hsActive.requestData();
 }

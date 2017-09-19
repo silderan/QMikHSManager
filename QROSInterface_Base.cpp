@@ -66,7 +66,9 @@ QString QROSInterfaceError::errorString(QROSInterfaceError::ErrorCode e, const Q
 	return rtn;
 }
 
-QROSInterface_Base::QROSInterface_Base(ROS::Comm *mktComm, QObject *papi = Q_NULLPTR) : QObject(papi), m_mktComm(mktComm), m_validVersionIndex(-2)
+QROSInterface_Base::QROSInterface_Base(ROS::Comm *mktComm, ROSInterfaceBaseData *ros_data, QObject *papi = Q_NULLPTR) :
+	QObject(papi),
+	m_mktComm(mktComm), m_rosData(ros_data), m_validVersionIndex(-2)
 {
 	connect( m_mktComm, &ROS::Comm::comReceive, this, &QROSInterface_Base::onResponce );
 }
@@ -76,11 +78,6 @@ void QROSInterface_Base::setError(QROSInterfaceError::ErrorCode e, const QString
 	m_lastError.setError(e, text);
 	if( e != QROSInterfaceError::NoEror )
 		emit rosInterfaceError(lastError());
-}
-
-void QROSInterface_Base::clearError()
-{
-	m_lastError.clearError();
 }
 
 bool QROSInterface_Base::checkROSVersion()
@@ -107,14 +104,14 @@ void QROSInterface_Base::requestData()
 {
 	qint64 t = QDateTime::currentMSecsSinceEpoch();
 	if( doRequest() )
-		m_requestTime = t;
+		rosData()->m_requestTime = t;
 }
 
 void QROSInterface_Base::onResponce(const ROS::QSentence &s)
 {
 	qint64 t = QDateTime::currentMSecsSinceEpoch();
 	clearError();
-	m_id = s.getID();
-	m_responseTime = t;
+	rosData()->m_id = s.getID();
+	rosData()->m_responseTime = t;
 	parseResponse(s);
 }

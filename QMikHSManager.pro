@@ -45,7 +45,8 @@ HEADERS  += mainwindow.h \
     QROSInterface_HSActive.h \
     Utils.h \
     QROSInterface_HSInfo.h \
-    QROSInterface_Torch.h
+    QROSInterface_Torch.h \
+    QROSInterface_HSUBase.h
 
 FORMS    += mainwindow.ui \
     DlgRouterConfig.ui

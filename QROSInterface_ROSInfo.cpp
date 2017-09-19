@@ -16,13 +16,19 @@ QList<ROS::QSentence> QROSInterface_ROSInfo::getROSVersionSentences()
 	return QList<ROS::QSentence>() << s1;
 }
 
+QROSInterface_ROSInfo::QROSInterface_ROSInfo(ROS::Comm *mktCom, QObject *papi) :
+	QROSInterface_Base(mktCom, new ROSInfoData(), papi)
+{
+	addValidVersions("0.0.0", "99.99.99");
+}
+
 void QROSInterface_ROSInfo::clear()
 {
-	m_rosVersion.clear();
-	m_architecture.clear();
-	m_boardName.clear();
-	m_lastError.clearError();
-	m_identity.clear();
+	rosInfoData().m_rosVersion.clear();
+	rosInfoData().m_architecture.clear();
+	rosInfoData().m_boardName.clear();
+	clearError();
+	rosInfoData().m_identity.clear();
 }
 
 bool QROSInterface_ROSInfo::doRequest()
@@ -40,19 +46,20 @@ bool QROSInterface_ROSInfo::parseResponse(const ROS::QSentence &s)
 		switch( s.getResultType() )
 		{
 		case ROS::QSentence::Reply:
-			if( m_rosVersion.fromString(s.attribute("version")) )
+			if( rosInfoData().m_rosVersion.fromString(s.attribute("version")) )
 			{
-				m_architecture = s.attribute("architecture-name");
-				m_boardName = s.attribute("board-name");
+				rosInfoData().m_architecture = s.attribute("architecture-name");
+				rosInfoData().m_boardName = s.attribute("board-name");
 			}
 			break;
 		case ROS::QSentence::Done:
 		default:
-			if( m_rosVersion.isValid() )
+			if( rosInfoData().m_rosVersion.isValid() )
 			{
-				emit versionReceived(rosVersion());
-				if( !m_identity.isEmpty() )
-					emit infoReceived(*this);
+				setROSVersion(rosInfoData().m_rosVersion);
+				emit versionReceived(rosInfoData().m_rosVersion);
+				if( !rosInfoData().m_identity.isEmpty() )
+					emit infoReceived(rosInfoData());
 				break;
 			}
 			else
@@ -76,14 +83,14 @@ bool QROSInterface_ROSInfo::parseResponse(const ROS::QSentence &s)
 		switch( s.getResultType() )
 		{
 		case ROS::QSentence::Done:
-			emit identityReceived(m_identity);
-			if( m_rosVersion.isValid() )
-				emit infoReceived(*this);
+			emit identityReceived(rosInfoData().m_identity);
+			if( rosInfoData().m_rosVersion.isValid() )
+				emit infoReceived(rosInfoData());
 			break;
 		case ROS::QSentence::Reply:
-			m_identity = s.attribute("name");
-			if( m_identity.isEmpty() )
-				m_identity = "<No name>";
+			rosInfoData().m_identity = s.attribute("name");
+			if( rosInfoData().m_identity.isEmpty() )
+				rosInfoData().m_identity = "<No name>";
 			break;
 		default:
 			setError(QROSInterfaceError::ROSVersionUnkown, QObject::tr("Cannot obtain router identity"));
